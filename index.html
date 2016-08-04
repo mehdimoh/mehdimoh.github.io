@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MS Cognitive Services Test</title>
+    <script src="jquery.min.js"></script>
+    <style>
+    body {
+        background-color: lightblue;
+    }
+    span.high {
+        background-color: lightblue;
+        color: red;
+    }
+    </style>
+</head>
+<body>
+<br/>
+<p>
+Enter text and press analyze to see results:
+</p>
+<form class="my-form">
+<div>
+<textarea rows="5" cols="100" class="text-to-analyze">
+I had a wonderful experience! The rooms were wonderful and the staff were helpful.
+</textarea>
+</div>
+<input type="submit" value="Analyze">
+</form>
+<br/>
+<div class="results">
+</div>
+</body>
+</html>
+
+<script type="text/javascript">
+    var appKey = "d9910762142c485f9f46f0442f531944";
+
+    var params = {};
+
+    var sampleDoc = {"id": 1,
+        "text": $('.text-to-analyze').val()}; 
+    
+    $('.my-form').submit( function () {
+
+        sampleDoc = {"id": 1, "text": $('.text-to-analyze').val()};
+        var body = new Object();
+        
+        var docs = [];
+        docs.push(sampleDoc);
+        
+        body.documents = docs;
+      
+        $.ajax({
+            url: "https://westus.api.cognitive.microsoft.com/text/analytics/v2.0/languages?"  + $.param(params),
+            beforeSend: function(xhrObj){
+                // Request headers
+                xhrObj.setRequestHeader("Content-Type","application/json");
+                xhrObj.setRequestHeader("Ocp-Apim-Subscription-Key", appKey);
+            },
+            type: "POST",
+            // Request body
+            data: JSON.stringify(body),
+        })
+        .done(function(data) {
+            var lang = data.documents[0].detectedLanguages[0].name;
+            $('.results').text("Detected Language: " + lang);
+            getKeyPhrases(getLanguage(lang));
+            
+        })
+        .fail(function() {
+            alert("error  ");
+        });
+
+        return false;
+    });
+
+    function getLanguage(language) {
+        switch(language) {
+                case "English":
+                    return "en";
+                case "Spanish":
+                    return "es";
+                case "German":
+                    return "de";  
+                case "Japanese":
+                    return "ja";      
+                default:
+                    return "";
+            } 
+    }
+
+    function getKeyPhrases(language) {
+        var body = new Object();
+        var docs = [];
+        
+        sampleDoc.language = language;
+        docs.push(sampleDoc);
+        
+        body.documents = docs;
+      
+        $.ajax({
+            url: "https://westus.api.cognitive.microsoft.com/text/analytics/v2.0/keyPhrases?" + $.param(params),
+            beforeSend: function(xhrObj) {
+                // Request headers
+                xhrObj.setRequestHeader("Content-Type","application/json");
+                xhrObj.setRequestHeader("Ocp-Apim-Subscription-Key", appKey);
+            },
+            type: "POST",
+            // Request body
+            data: JSON.stringify(body),
+        })
+        .done(function(data) {
+            var phrases = data.documents[0].keyPhrases;
+            var newText = highlightWords($('.text-to-analyze').val(), phrases);
+            $('.results').append("<br/><br/>" + "Key Phrases: " + newText);
+            callForSentiment(language);
+        })
+        .fail(function() {
+            alert("error");
+        });
+    }
+
+    function callForSentiment(language) {
+        var body = new Object();
+        var docs = [];
+        
+        sampleDoc.language = language;
+        docs.push(sampleDoc);
+        
+        body.documents = docs;
+
+        $.ajax({
+            url: "https://westus.api.cognitive.microsoft.com/text/analytics/v2.0/sentiment?" + $.param(params),
+            beforeSend: function(xhrObj){
+                // Request headers
+                xhrObj.setRequestHeader("Content-Type","application/json");
+                xhrObj.setRequestHeader("Ocp-Apim-Subscription-Key", appKey);
+            },
+            type: "POST",
+            // Request body
+            data: JSON.stringify(body),
+        })
+        .done(function(data) {
+            var score = data.documents[0].score;
+            $('.results').append("<br/><br/>" + "Score: " + score);
+        })
+        .fail(function() {
+            alert("error");
+        });
+    }
+
+    function highlightWords(text, words) {
+        var start = "<span class=\"high\">";
+        var end = "</span>"
+        $.each(words, function(i, word) {
+            var index = text.indexOf(word);
+            var len = word.length;
+            if(index > 0) {
+                text = text.substring(0, index) + start + word + end + text.substring(index + len);
+            }
+        });
+        return text;
+    }
+</script>
