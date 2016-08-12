@@ -201,8 +201,10 @@ Book me a flight to Boston on May 4
             var score = data.documents[0].score;
             if(score < 0.4)
                 addTableCell("Sentiments score", score, false, null, "trLowScore");
-            else 
+            else if(score > 0.6)
                 addTableCell("Sentiments score", score, false, null, "trHighScore");
+            else
+                addTableCell("Sentiments score", score);
         })
         .fail(function() {
             alert("error");
