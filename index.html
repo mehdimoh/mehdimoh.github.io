@@ -18,10 +18,13 @@
         padding: 4px;
         border: 1px solid black;
     }
-    tr.trLowScore {
+    tr.trRed {
         color: red;
     }
-    tr.trHighScore {
+    tr.trYellow {
+        color: yellow;
+    }
+    tr.trGreen {
         color: green;
     }
     </style>
@@ -63,6 +66,8 @@ Book me a flight to Boston on May 4
 
     var sampleDoc = {"id": 1,
         "text": $('.text-to-analyze').val()}; 
+
+    var isTroubleShoot = false;    
     
     $(function() {
         $(".solTitle").hide();
@@ -106,7 +111,11 @@ Book me a flight to Boston on May 4
             });
             $.each(data.intents, function(index, intent) {
                 var color = (intent.score == maxScore) ? "red" : ""; 
-                addTableCell(intent.intent + " intent score", intent.score, false, color);  
+                if(intent.intent.toLowerCase().indexOf("TroubleShoot") > -1 &&
+                    intent.score > 0.4) {
+                    isTroubleShoot = true;
+                }
+                addTableCell(intent.intent + " Intent Score", intent.score, false, color);  
             });
         })
         .fail(function() {
@@ -199,12 +208,16 @@ Book me a flight to Boston on May 4
         })
         .done(function(data) {
             var score = data.documents[0].score;
-            if(score < 0.4)
-                addTableCell("Sentiments score", score, false, null, "trLowScore");
-            else if(score > 0.6)
-                addTableCell("Sentiments score", score, false, null, "trHighScore");
-            else
-                addTableCell("Sentiments score", score);
+            if(!isTroubleShoot) {
+                addTableCell("Sentiments Score", score);
+            } else {
+                if(score < 0.4)
+                    addTableCell("Sentiments Score", score, false, null, "trRed");
+                else if(score > 0.6)
+                    addTableCell("Sentiments Score", score, false, null, "trGreen");
+                else
+                    addTableCell("Sentiments Score", score, false, null, "trYellow");
+            }
         })
         .fail(function() {
             alert("error");
