@@ -18,6 +18,9 @@
         padding: 4px;
         border: 1px solid black;
     }
+    tr.trGrey {
+        color: grey;
+    }
     tr.trRed {
         color: red;
     }
@@ -111,8 +114,8 @@ Book me a flight to Boston on May 4
             });
             $.each(data.intents, function(index, intent) {
                 var color = (intent.score == maxScore) ? "red" : ""; 
-                if(intent.intent.toLowerCase().indexOf("troubleshoot") > -1 &&
-                    intent.score > 0.4) {
+                if(intent.score == maxScore 
+                    && intent.intent.toLowerCase().indexOf("troubleshoot") > -1) {
                     isTroubleShoot = true;
                 }
                 addTableCell(intent.intent + " Intent Score", intent.score, false, color);  
@@ -208,16 +211,14 @@ Book me a flight to Boston on May 4
         })
         .done(function(data) {
             var score = data.documents[0].score;
-            if(!isTroubleShoot) {
-                addTableCell("Sentiments Score", score);
-            } else {
-                if(score < 0.4)
-                    addTableCell("Sentiments Score", score, false, null, "trRed");
-                else if(score > 0.6)
-                    addTableCell("Sentiments Score", score, false, null, "trGreen");
-                else
-                    addTableCell("Sentiments Score", score, false, null, "trYellow");
-            }
+            if(!isTroubleShoot)
+                addTableCell("Sentiments Score", score, false, null, "trGrey");
+            else if(score < 0.4)
+                addTableCell("Sentiments Score", score, false, null, "trRed");
+            else if(score > 0.6)
+                addTableCell("Sentiments Score", score, false, null, "trGreen");
+            else
+                addTableCell("Sentiments Score", score, false, null, "trYellow");
         })
         .fail(function() {
             alert("error");
