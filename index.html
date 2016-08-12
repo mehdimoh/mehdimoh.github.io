@@ -111,7 +111,7 @@ Book me a flight to Boston on May 4
             });
             $.each(data.intents, function(index, intent) {
                 var color = (intent.score == maxScore) ? "red" : ""; 
-                if(intent.intent.toLowerCase().indexOf("TroubleShoot") > -1 &&
+                if(intent.intent.toLowerCase().indexOf("troubleshoot") > -1 &&
                     intent.score > 0.4) {
                     isTroubleShoot = true;
                 }
