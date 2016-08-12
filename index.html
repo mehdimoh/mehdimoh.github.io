@@ -11,6 +11,13 @@
         background-color: lightblue;
         color: red;
     }
+    table {
+        border-collapse: collapse;
+    }
+    table, th, td {
+        padding: 4px;
+        border: 1px solid black;
+    }
     </style>
 </head>
 <body>
@@ -24,8 +31,16 @@ LUIS Sample
 Book me a flight to Boston on May 4
 </textarea>
 </div>
-<input type="submit" value="Show Results" class="LUISButton">
+<input type="submit" value="Analyze" class="LUISButton">
 </form>
+<br/>
+<table class="intentsTable">
+    <tbody></tbody>
+</table>
+<br/>
+<div class="highScore"></div>
+<br/>
+<div class="solTitle"> <a href="#">Show full result</a></div>
 <pre class="luisResults">
 </pre>
 <hr>
@@ -58,38 +73,68 @@ I had a wonderful experience! The rooms were wonderful and the staff were helpfu
     var sampleDoc = {"id": 1,
         "text": $('.text-for-luis').val()}; 
     
-    $('.luis-form').submit( function () {
-        if($('.LUISButton').val() == "Hide Results") {
-            $('.LUISButton').val("Show Results");
-            $('.luisResults').hide();
-            return false;
-        }
-        else {
-            $('.luisResults').show();
-            luisDoc = $('.text-for-luis').val();
-            $.ajax({
-                url: "https://api.projectoxford.ai/luis/v1/application",
-                type: "GET",
-                data: {
-                    "id": "a2815ebe-bb22-4051-8fd6-d3f229438d03",
-                    "subscription-key": "d4e896ee7b5343dfad292537b9f56ab7",
-                    "q": luisDoc
-                },
-            })
-            .done(function(data) {
-                $('.luisResults').text(JSON.stringify(data, null, 2));
-                $('.LUISButton').val("Hide Results");
-            })
-            .fail(function() {
-                console.log("error  ");
-            });
-
-            return false;
-        }
+    $(function() {
+        $(".solTitle").hide();
+        $('.luisResults').hide();
+        $(".solTitle a").click(function() {
+            console.log($(".solTitle a").text().indexOf("Show"))
+            if($(".solTitle a").text().indexOf("Show") > -1) {
+                $(".solTitle a").text("Hide results");
+                $('.luisResults').show();
+            } else {
+                $(".solTitle a").text("Show full results");
+                $('.luisResults').hide();
+            }
+        });
     });
 
-    $('.text-form').submit( function () {
+    $('.luis-form').submit( function () {
+        $(".solTitle").show();
+        $('.luisResults').show();
+        luisDoc = $('.text-for-luis').val();
+        $.ajax({
+            url: "https://api.projectoxford.ai/luis/v1/application",
+            type: "GET",
+            data: {
+                "id": "a2815ebe-bb22-4051-8fd6-d3f229438d03",
+                "subscription-key": "d4e896ee7b5343dfad292537b9f56ab7",
+                "q": luisDoc
+            },
+        })
+        .done(function(data) {
+            $('.luisResults').text(JSON.stringify(data, null, 2));
+            $('.luisResults').hide();
+            addTableCell("Intent Name", "Score", true);
+            var maxScore = 0;
+            var maxIntent = "";
+            $.each(data.intents, function(index, intent) {
+                addTableCell(intent.intent, intent.score); 
+                if(intent.score > maxScore) {
+                    maxScore = intent.score;
+                    maxIntent = intent.intent;
+                }  
+            });
+            $('.highScore').text("Main Intent: " + maxIntent);
+        })
+        .fail(function() {
+            console.log("error  ");
+        });
 
+        return false;
+    });
+
+    function addTableCell(intent, score, bold) {
+        var bold = bold ? "<b>" : "";
+        $('.intentsTable')
+            .find('tbody')
+                .append($('<tr>')
+                    .append($('<td>')
+                        .append(bold + intent))
+                    .append($('<td>')
+                        .append(bold + score)));
+    }
+
+    $('.text-form').submit( function () {
         sampleDoc = {"id": 1, "text": $('.text-to-analyze').val()};
         var body = new Object();
         
@@ -113,7 +158,6 @@ I had a wonderful experience! The rooms were wonderful and the staff were helpfu
             var lang = data.documents[0].detectedLanguages[0].name;
             $('.textResults').text("Detected Language: " + lang);
             getKeyPhrases(getLanguage(lang));
-            
         })
         .fail(function() {
             alert("error  ");
