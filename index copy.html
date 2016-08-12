@@ -18,22 +18,16 @@
         padding: 4px;
         border: 1px solid black;
     }
-    tr.trLowScore {
-        color: red;
-    }
-    tr.trHighScore {
-        color: green;
-    }
     </style>
 </head>
 <body>
 <br/>
 <h1>
-LUIS & Text Analytics Sample
+LUIS Sample
 </h1>
 <form class="luis-form">
 <div>
-<textarea rows="4" cols="50" class="text-to-analyze">
+<textarea rows="4" cols="50" class="text-for-luis">
 Book me a flight to Boston on May 4
 </textarea>
 </div>
@@ -44,11 +38,26 @@ Book me a flight to Boston on May 4
     <tbody></tbody>
 </table>
 <br/>
+<div class="highScore"></div>
 <br/>
 <div class="solTitle"> <a href="#">Show full result</a></div>
 <pre class="luisResults">
 </pre>
 <hr>
+<h1>
+Text Sample
+</h1>
+<form class="text-form">
+<div>
+<textarea rows="4" cols="50" class="text-to-analyze">
+I had a wonderful experience! The rooms were wonderful and the staff were helpful.
+</textarea>
+</div>
+<input type="submit" value="Analyze">
+</form>
+<br/>
+<div class="textResults">
+</div>
 <br/>
 <br/>
 </body>
@@ -59,15 +68,16 @@ Book me a flight to Boston on May 4
 
     var params = {};
 
-    var luisDoc = $('.text-to-analyze').val(); 
+    var luisDoc = $('.text-for-luis').val(); 
 
     var sampleDoc = {"id": 1,
-        "text": $('.text-to-analyze').val()}; 
+        "text": $('.text-for-luis').val()}; 
     
     $(function() {
         $(".solTitle").hide();
         $('.luisResults').hide();
         $(".solTitle a").click(function() {
+            console.log($(".solTitle a").text().indexOf("Show"))
             if($(".solTitle a").text().indexOf("Show") > -1) {
                 $(".solTitle a").text("Hide results");
                 $('.luisResults').show();
@@ -82,8 +92,7 @@ Book me a flight to Boston on May 4
         $(".solTitle").show();
         $(".intentsTable tr").remove();
         $('.luisResults').show();
-        addTableCell("Analytics", "Result", true);
-        luisDoc = $('.text-to-analyze').val();
+        luisDoc = $('.text-for-luis').val();
         $.ajax({
             url: "https://api.projectoxford.ai/luis/v1/application",
             type: "GET",
@@ -96,23 +105,37 @@ Book me a flight to Boston on May 4
         .done(function(data) {
             $('.luisResults').text(JSON.stringify(data, null, 2));
             $('.luisResults').hide();
+            addTableCell("Intent Name", "Score", true);
             var maxScore = 0;
             var maxIntent = "";
             $.each(data.intents, function(index, intent) {
+                addTableCell(intent.intent, intent.score); 
                 if(intent.score > maxScore) {
                     maxScore = intent.score;
                     maxIntent = intent.intent;
                 }  
             });
-            $.each(data.intents, function(index, intent) {
-                var color = (intent.score == maxScore) ? "red" : ""; 
-                addTableCell(intent.intent + " intent score", intent.score, false, color);  
-            });
+            $('.highScore').text("Main Intent: " + maxIntent);
         })
         .fail(function() {
             console.log("error  ");
         });
 
+        return false;
+    });
+
+    function addTableCell(intent, score, bold) {
+        var bold = bold ? "<b>" : "";
+        $('.intentsTable')
+            .find('tbody')
+                .append($('<tr>')
+                    .append($('<td>')
+                        .append(bold + intent))
+                    .append($('<td>')
+                        .append(bold + score)));
+    }
+
+    $('.text-form').submit( function () {
         sampleDoc = {"id": 1, "text": $('.text-to-analyze').val()};
         var body = new Object();
         
@@ -134,10 +157,8 @@ Book me a flight to Boston on May 4
         })
         .done(function(data) {
             var lang = data.documents[0].detectedLanguages[0].name;
-            addTableCell("Detected Language", lang);
-            var language = getLanguage(lang);
-            getKeyPhrases(language);
-            callForSentiment(language);
+            $('.textResults').text("Detected Language: " + lang);
+            getKeyPhrases(getLanguage(lang));
         })
         .fail(function() {
             alert("error  ");
@@ -145,6 +166,21 @@ Book me a flight to Boston on May 4
 
         return false;
     });
+
+    function getLanguage(language) {
+        switch(language) {
+                case "English":
+                    return "en";
+                case "Spanish":
+                    return "es";
+                case "German":
+                    return "de";  
+                case "Japanese":
+                    return "ja";      
+                default:
+                    return "";
+            } 
+    }
 
     function getKeyPhrases(language) {
         var body = new Object();
@@ -168,9 +204,9 @@ Book me a flight to Boston on May 4
         })
         .done(function(data) {
             var phrases = data.documents[0].keyPhrases;
-            var keys = "" + phrases;
-            keys = keys.replace(",", ", ");
-            addTableCell("Key Phrases", keys);
+            var newText = highlightWords($('.text-to-analyze').val(), phrases);
+            $('.textResults').append("<br/>" + "Key Phrases: " + newText);
+            callForSentiment(language);
         })
         .fail(function() {
             alert("error");
@@ -199,41 +235,24 @@ Book me a flight to Boston on May 4
         })
         .done(function(data) {
             var score = data.documents[0].score;
-            if(score < 0.4)
-                addTableCell("Sentiments score", score, false, null, "trLowScore");
-            else 
-                addTableCell("Sentiments score", score, false, null, "trHighScore");
+            $('.textResults').append("<br/>" + "Score: " + score);
         })
         .fail(function() {
             alert("error");
         });
     }
 
-    function addTableCell(intent, score, bold, color, trClass) {
-        var color = color ? 'bgcolor=' + color : '';
-        var bold = bold ? "<b>" : "";
-        $('.intentsTable')
-            .find('tbody')
-                .append($('<tr class="' + trClass + '" bgcolor=' + color + '>')
-                    .append($('<td>')
-                        .append(bold + intent))
-                    .append($('<td>')
-                        .append(bold + score)));
-    }
-
-    function getLanguage(language) {
-        switch(language) {
-                case "English":
-                    return "en";
-                case "Spanish":
-                    return "es";
-                case "German":
-                    return "de";  
-                case "Japanese":
-                    return "ja";      
-                default:
-                    return "";
-            } 
+    function highlightWords(text, words) {
+        var start = "<span class=\"high\">";
+        var end = "</span>"
+        $.each(words, function(i, word) {
+            var index = text.indexOf(word);
+            var len = word.length;
+            if(index > 0) {
+                text = text.substring(0, index) + start + word + end + text.substring(index + len);
+            }
+        });
+        return text;
     }
     
 </script>
