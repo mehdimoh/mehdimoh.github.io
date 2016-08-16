@@ -61,7 +61,7 @@ Book me a flight to Boston on May 4
 </html>
 
 <script type="text/javascript">
-    var appKey = "d9910762142c485f9f46f0442f531944";
+    var appKey = "2c7c79a10d60495092179510ea2b0381";
 
     var params = {};
 
@@ -120,11 +120,16 @@ Book me a flight to Boston on May 4
                 }
                 addTableCell(intent.intent + " Intent Score", intent.score, false, color);  
             });
+            callForText();
         })
         .fail(function() {
             console.log("error  ");
         });
 
+        return false;
+    });
+
+    function callForText() {
         sampleDoc = {"id": 1, "text": $('.text-to-analyze').val()};
         var body = new Object();
         
@@ -154,9 +159,7 @@ Book me a flight to Boston on May 4
         .fail(function() {
             alert("error  ");
         });
-
-        return false;
-    });
+    }
 
     function getKeyPhrases(language) {
         var body = new Object();
